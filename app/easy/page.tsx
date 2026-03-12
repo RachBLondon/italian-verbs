@@ -17,7 +17,7 @@ type CheckState =
 
 function newRound(verbs: VerbEntry[]) {
   const verb = verbs[Math.floor(Math.random() * verbs.length)];
-  const conjugations = shuffle(PRONOUNS.map((p) => verb.present[p]));
+  const conjugations = shuffle(PRONOUNS.map((p) => ({ id: p, value: verb.present[p] })));
 
   const options = [
     verb.english,
@@ -74,13 +74,18 @@ export default function EasyPage() {
     setRoundSeed((x) => x + 1);
   }, [resetRoundUi]);
 
+  const conjugationById = useMemo(() => {
+    if (!round) return new Map<string, string>();
+    return new Map(round.conjugations.map((t) => [t.id, t.value]));
+  }, [round]);
+
   const availableConjugations = useMemo(() => {
-    if (!round) return [] as string[];
+    if (!round) return [] as typeof round.conjugations;
     const used = new Set(Object.values(assignments).filter(Boolean) as string[]);
-    return round.conjugations.filter((c) => !used.has(c));
+    return round.conjugations.filter((t) => !used.has(t.id));
   }, [round, assignments]);
 
-  const setDragPayload = useCallback((e: DragEvent, payload: { conjugation: string; fromPronoun?: Pronoun }) => {
+  const setDragPayload = useCallback((e: DragEvent, payload: { tileId: string; fromPronoun?: Pronoun }) => {
     e.dataTransfer.setData('application/json', JSON.stringify(payload));
     e.dataTransfer.effectAllowed = 'move';
   }, []);
@@ -89,7 +94,7 @@ export default function EasyPage() {
     const raw = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
     if (!raw) return null;
     try {
-      return JSON.parse(raw) as { conjugation: string; fromPronoun?: Pronoun };
+      return JSON.parse(raw) as { tileId: string; fromPronoun?: Pronoun };
     } catch {
       return null;
     }
@@ -101,19 +106,19 @@ export default function EasyPage() {
       const payload = readDragPayload(e);
       if (!payload) return;
 
-      const { conjugation, fromPronoun } = payload;
+      const { tileId, fromPronoun } = payload;
 
       setAssignments((prev) => {
         const next: Partial<Record<Pronoun, string>> = { ...prev };
 
         if (fromPronoun) delete next[fromPronoun];
 
-        // If this conjugation was assigned elsewhere, clear it.
+        // If this tile was assigned elsewhere, clear it.
         for (const p of PRONOUNS) {
-          if (next[p] === conjugation) delete next[p];
+          if (next[p] === tileId) delete next[p];
         }
 
-        next[pronoun] = conjugation;
+        next[pronoun] = tileId;
         return next;
       });
     },
@@ -128,7 +133,7 @@ export default function EasyPage() {
 
       setAssignments((prev) => {
         const next = { ...prev };
-        if (next[payload.fromPronoun] === payload.conjugation) delete next[payload.fromPronoun];
+        if (next[payload.fromPronoun] === payload.tileId) delete next[payload.fromPronoun];
         return next;
       });
     },
@@ -140,12 +145,12 @@ export default function EasyPage() {
     if (!canCheck) return;
 
     const perPronounCorrect: Record<Pronoun, boolean> = {
-      'io': assignments['io'] === round.verb.present['io'],
-      'tu': assignments['tu'] === round.verb.present['tu'],
-      'lui/lei': assignments['lui/lei'] === round.verb.present['lui/lei'],
-      'noi': assignments['noi'] === round.verb.present['noi'],
-      'voi': assignments['voi'] === round.verb.present['voi'],
-      'loro': assignments['loro'] === round.verb.present['loro']
+      'io': conjugationById.get(assignments['io'] ?? '') === round.verb.present['io'],
+      'tu': conjugationById.get(assignments['tu'] ?? '') === round.verb.present['tu'],
+      'lui/lei': conjugationById.get(assignments['lui/lei'] ?? '') === round.verb.present['lui/lei'],
+      'noi': conjugationById.get(assignments['noi'] ?? '') === round.verb.present['noi'],
+      'voi': conjugationById.get(assignments['voi'] ?? '') === round.verb.present['voi'],
+      'loro': conjugationById.get(assignments['loro'] ?? '') === round.verb.present['loro']
     };
 
     const meaningCorrect = selectedMeaning === round.verb.english;
@@ -155,7 +160,7 @@ export default function EasyPage() {
     if (isRoundCorrect) setCorrect((c) => c + 1);
 
     setCheckState({ status: 'checked', isRoundCorrect, perPronounCorrect, meaningCorrect });
-  }, [assignments, selectedMeaning, round, canCheck]);
+  }, [assignments, selectedMeaning, round, canCheck, conjugationById]);
 
   if (verbsState.status === 'loading') {
     return (
@@ -204,7 +209,8 @@ export default function EasyPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div style={{ display: 'grid', gap: 10 }}>
                 {PRONOUNS.map((p) => {
-                  const value = assignments[p];
+                  const tileId = assignments[p];
+                  const value = tileId ? conjugationById.get(tileId) : undefined;
                   const checked = checkState.status === 'checked';
                   const correctness = checked ? checkState.perPronounCorrect[p] : null;
                   const disabled = checkState.status !== 'editing';
@@ -245,12 +251,12 @@ export default function EasyPage() {
 
                       <div style={{ height: 6 }} />
 
-                      {value ? (
+                      {tileId && value ? (
                         <button
                           type="button"
                           className="btn"
                           draggable={!disabled}
-                          onDragStart={(e) => setDragPayload(e, { conjugation: value, fromPronoun: p })}
+                          onDragStart={(e) => setDragPayload(e, { tileId, fromPronoun: p })}
                           style={{ width: '100%', justifyContent: 'center' }}
                           title={disabled ? undefined : 'Drag to another pronoun (or back to the pool)'}
                         >
@@ -304,16 +310,16 @@ export default function EasyPage() {
                   }}
                 >
                   <div className="row">
-                    {availableConjugations.map((c) => (
+                    {availableConjugations.map((t) => (
                       <button
-                        key={c}
+                        key={t.id}
                         type="button"
                         className="btn"
                         draggable={checkState.status === 'editing'}
-                        onDragStart={(e) => setDragPayload(e, { conjugation: c })}
+                        onDragStart={(e) => setDragPayload(e, { tileId: t.id })}
                         style={{ cursor: checkState.status === 'editing' ? 'grab' : undefined }}
                       >
-                        {c}
+                        {t.value}
                       </button>
                     ))}
                     {availableConjugations.length === 0 && (
