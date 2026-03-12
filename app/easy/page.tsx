@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
+import ConfettiOverlay from '@/components/ConfettiOverlay';
 import ScoreBar from '@/components/ScoreBar';
 import { useVerbs } from '@/lib/useVerbs';
 import { PRONOUNS, type Pronoun, type VerbEntry } from '@/lib/types';
@@ -54,6 +55,15 @@ export default function EasyPage() {
   }, [verbsState, roundSeed]);
 
   const [checkState, setCheckState] = useState<CheckState>({ status: 'editing' });
+  const [celebrate, setCelebrate] = useState(false);
+
+  useEffect(() => {
+    if (checkState.status === 'checked' && checkState.isRoundCorrect) {
+      setCelebrate(true);
+      const t = window.setTimeout(() => setCelebrate(false), 10);
+      return () => window.clearTimeout(t);
+    }
+  }, [checkState]);
 
   const canCheck = useMemo(() => {
     if (!round) return false;
@@ -198,6 +208,7 @@ export default function EasyPage() {
 
   return (
     <main>
+      <ConfettiOverlay active={celebrate} />
       <ScoreBar modeLabel="Easy" correct={correct} total={total} onReset={onResetScore} />
 
       <div className="card cardFrame" style={{ padding: 18 }}>

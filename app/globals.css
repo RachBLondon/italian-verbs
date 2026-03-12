@@ -231,3 +231,30 @@ select:focus-visible {
 .badgeBad {
   color: var(--color-danger);
 }
+
+.confettiOverlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 50;
+}
+
+.confettiPiece {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  animation-name: confettiMove;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  will-change: transform;
+}
+
+@keyframes confettiMove {
+  from {
+    transform: translate3d(0, -10px, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(0, 105vh, 0) rotate(540deg);
+  }
+}
