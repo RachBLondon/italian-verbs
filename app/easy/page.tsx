@@ -12,7 +12,10 @@ type CheckState =
       status: 'checked';
       isRoundCorrect: boolean;
       perPronounCorrect: Record<Pronoun, boolean>;
-      meaningCorre</old_code><new_code>function newRound(verbs: VerbEntry[]) {
+      meaningCorrect: boolean;
+    };
+
+function newRound(verbs: VerbEntry[]) {
   const verb = verbs[Math.floor(Math.random() * verbs.length)];
   const conjugations = shuffle(PRONOUNS.map((p) => ({ id: p, value: verb.present[p] })));
 
