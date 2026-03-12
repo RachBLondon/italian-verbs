@@ -7,6 +7,8 @@ import { useVerbs } from '@/lib/useVerbs';
 import { PRONOUNS, type Pronoun, type VerbEntry } from '@/lib/types';
 import { sampleUnique, shuffle } from '@/lib/utils';
 
+type TapSelection = { tileId: string; fromPronoun?: Pronoun };
+
 type CheckState =
   | { status: 'editing' }
   | {
@@ -49,6 +51,13 @@ export default function EasyPage() {
 
   const [roundSeed, setRoundSeed] = useState(0);
 
+  const isTapMode = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  }, []);
+
+  const [tapSelection, setTapSelection] = useState<TapSelection | null>(null);
+
   const round = useMemo(() => {
     if (verbsState.status !== 'ready') return null;
     return newRound(verbsState.verbs);
@@ -78,6 +87,7 @@ export default function EasyPage() {
   const resetRoundUi = useCallback(() => {
     setAssignments({});
     setSelectedMeaning(null);
+    setTapSelection(null);
     setCheckState({ status: 'editing' });
   }, []);
 
@@ -119,12 +129,8 @@ export default function EasyPage() {
     }
   }, []);
 
-  const handleDropOnPronoun = useCallback(
-    (pronoun: Pronoun, e: DragEvent) => {
-      if (checkState.status !== 'editing') return;
-      const payload = readDragPayload(e);
-      if (!payload) return;
-
+  const assignTileToPronoun = useCallback(
+    (pronoun: Pronoun, payload: TapSelection) => {
       const { tileId, fromPronoun } = payload;
 
       setAssignments((prev) => {
@@ -141,7 +147,28 @@ export default function EasyPage() {
         return next;
       });
     },
-    [checkState.status, readDragPayload]
+    []
+  );
+
+  const unassignTileToPool = useCallback((payload: TapSelection) => {
+    const { fromPronoun, tileId } = payload;
+    if (!fromPronoun) return;
+
+    setAssignments((prev) => {
+      const next = { ...prev };
+      if (next[fromPronoun] === tileId) delete next[fromPronoun];
+      return next;
+    });
+  }, []);
+
+  const handleDropOnPronoun = useCallback(
+    (pronoun: Pronoun, e: DragEvent) => {
+      if (checkState.status !== 'editing') return;
+      const payload = readDragPayload(e);
+      if (!payload) return;
+      assignTileToPronoun(pronoun, payload);
+    },
+    [checkState.status, readDragPayload, assignTileToPronoun]
   );
 
   const handleDropOnPool = useCallback(
@@ -149,17 +176,9 @@ export default function EasyPage() {
       if (checkState.status !== 'editing') return;
       const payload = readDragPayload(e);
       if (!payload) return;
-
-      const { fromPronoun } = payload;
-      if (!fromPronoun) return;
-
-      setAssignments((prev) => {
-        const next = { ...prev };
-        if (next[fromPronoun] === payload.tileId) delete next[fromPronoun];
-        return next;
-      });
+      unassignTileToPool(payload);
     },
-    [checkState.status, readDragPayload]
+    [checkState.status, readDragPayload, unassignTileToPool]
   );
 
   const handleCheck = useCallback(() => {
@@ -227,7 +246,9 @@ export default function EasyPage() {
 
         <div className="grid2">
           <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-panel)' }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>1) Drag each conjugation onto the correct pronoun</div>
+            <div style={{ fontWeight: 800, marginBottom: 8 }}>
+              1) {isTapMode ? 'Tap a conjugation, then tap the correct pronoun' : 'Drag each conjugation onto the correct pronoun'}
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div style={{ display: 'grid', gap: 10 }}>
@@ -238,16 +259,27 @@ export default function EasyPage() {
                   const correctness = checked ? checkState.perPronounCorrect[p] : null;
                   const disabled = checkState.status !== 'editing';
 
+                  const isSelected =
+                    isTapMode && tileId && tapSelection?.tileId === tileId && tapSelection?.fromPronoun === p;
+                  const showTapTarget = isTapMode && !disabled && Boolean(tapSelection) && checkState.status === 'editing';
+
                   return (
                     <div
                       key={p}
                       className="card"
-                      onDragOver={(e) => {
+                      onClick={() => {
+                        if (!isTapMode) return;
                         if (disabled) return;
+                        if (!tapSelection) return;
+                        assignTileToPronoun(p, tapSelection);
+                        setTapSelection(null);
+                      }}
+                      onDragOver={(e) => {
+                        if (disabled || isTapMode) return;
                         e.preventDefault();
                       }}
                       onDrop={(e) => {
-                        if (disabled) return;
+                        if (disabled || isTapMode) return;
                         e.preventDefault();
                         handleDropOnPronoun(p, e);
                       }}
@@ -260,7 +292,11 @@ export default function EasyPage() {
                             ? correctness
                               ? 'var(--color-success)'
                               : 'var(--color-danger)'
-                            : 'var(--color-border)'
+                            : isSelected
+                              ? 'var(--color-accent)'
+                              : showTapTarget
+                                ? 'var(--color-border-strong)'
+                                : 'var(--color-border)'
                       }}
                     >
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -278,10 +314,29 @@ export default function EasyPage() {
                         <button
                           type="button"
                           className="btn"
-                          draggable={!disabled}
-                          onDragStart={(e) => setDragPayload(e, { tileId, fromPronoun: p })}
+                          draggable={!disabled && !isTapMode}
+                          onDragStart={(e) => {
+                            if (isTapMode) return;
+                            setDragPayload(e, { tileId, fromPronoun: p });
+                          }}
+                          onClick={(e) => {
+                            if (!isTapMode) return;
+                            if (disabled) return;
+                            e.stopPropagation();
+                            setTapSelection((prev) => {
+                              if (prev && prev.tileId === tileId && prev.fromPronoun === p) return null;
+                              return { tileId, fromPronoun: p };
+                            });
+                          }}
+                          aria-pressed={isTapMode ? isSelected : undefined}
                           style={{ width: '100%', justifyContent: 'center' }}
-                          title={disabled ? undefined : 'Drag to another pronoun (or back to the pool)'}
+                          title={
+                            disabled
+                              ? undefined
+                              : isTapMode
+                                ? 'Tap to select, then tap another pronoun to move'
+                                : 'Drag to another pronoun (or back to the pool)'
+                          }
                         >
                           {value}
                         </button>
@@ -295,7 +350,7 @@ export default function EasyPage() {
                             color: 'var(--color-fg-muted)'
                           }}
                         >
-                          Drop here
+                          {isTapMode ? 'Tap to place' : 'Drop here'}
                         </div>
                       )}
 
@@ -312,16 +367,28 @@ export default function EasyPage() {
 
               <div>
                 <div className="small" style={{ marginBottom: 8 }}>
-                  Conjugations (drag from here)
+                  Conjugations ({isTapMode ? 'tap to select' : 'drag from here'})
                 </div>
 
                 <div
                   className="card"
+                  onClick={() => {
+                    if (!isTapMode) return;
+                    if (checkState.status !== 'editing') return;
+                    if (!tapSelection) return;
+
+                    if (tapSelection.fromPronoun) {
+                      unassignTileToPool(tapSelection);
+                    }
+                    setTapSelection(null);
+                  }}
                   onDragOver={(e) => {
+                    if (isTapMode) return;
                     if (checkState.status !== 'editing') return;
                     e.preventDefault();
                   }}
                   onDrop={(e) => {
+                    if (isTapMode) return;
                     if (checkState.status !== 'editing') return;
                     e.preventDefault();
                     handleDropOnPool(e);
@@ -329,22 +396,47 @@ export default function EasyPage() {
                   style={{
                     padding: 10,
                     borderRadius: 12,
-                    background: 'var(--color-surface)'
+                    background: 'var(--color-surface)',
+                    borderColor:
+                      isTapMode && tapSelection
+                        ? tapSelection.fromPronoun
+                          ? 'var(--color-border-strong)'
+                          : 'var(--color-accent)'
+                        : undefined
                   }}
                 >
                   <div className="row">
-                    {availableConjugations.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        className="btn"
-                        draggable={checkState.status === 'editing'}
-                        onDragStart={(e) => setDragPayload(e, { tileId: t.id })}
-                        style={{ cursor: checkState.status === 'editing' ? 'grab' : undefined }}
-                      >
-                        {t.value}
-                      </button>
-                    ))}
+                    {availableConjugations.map((t) => {
+                      const isSelected = isTapMode && tapSelection?.tileId === t.id && !tapSelection.fromPronoun;
+
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className="btn"
+                          draggable={checkState.status === 'editing' && !isTapMode}
+                          onDragStart={(e) => {
+                            if (isTapMode) return;
+                            setDragPayload(e, { tileId: t.id });
+                          }}
+                          onClick={() => {
+                            if (!isTapMode) return;
+                            if (checkState.status !== 'editing') return;
+                            setTapSelection((prev) => {
+                              if (prev && prev.tileId === t.id && !prev.fromPronoun) return null;
+                              return { tileId: t.id };
+                            });
+                          }}
+                          aria-pressed={isTapMode ? isSelected : undefined}
+                          style={{
+                            cursor: checkState.status === 'editing' && !isTapMode ? 'grab' : undefined,
+                            borderColor: isSelected ? 'var(--color-accent)' : undefined
+                          }}
+                        >
+                          {t.value}
+                        </button>
+                      );
+                    })}
                     {availableConjugations.length === 0 && (
                       <div className="small" style={{ padding: '6px 2px' }}>
                         All assigned
@@ -354,7 +446,7 @@ export default function EasyPage() {
                 </div>
 
                 <div className="small" style={{ marginTop: 8 }}>
-                  Tip: Drag an assigned conjugation back here to unassign it.
+                  Tip: {isTapMode ? 'Tap an assigned conjugation to select it, then tap here to unassign (or tap another pronoun to move it).' : 'Drag an assigned conjugation back here to unassign it.'}
                 </div>
               </div>
             </div>
@@ -419,7 +511,7 @@ export default function EasyPage() {
             )}
 
             <div className="small" style={{ marginTop: 10 }}>
-              Tip: You can reassign by dragging a conjugation onto a different pronoun.
+              Tip: {isTapMode ? 'You can reassign by selecting a conjugation, then tapping a different pronoun.' : 'You can reassign by dragging a conjugation onto a different pronoun.'}
             </div>
           </div>
         </div>
