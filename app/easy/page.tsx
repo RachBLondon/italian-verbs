@@ -12,10 +12,7 @@ type CheckState =
       status: 'checked';
       isRoundCorrect: boolean;
       perPronounCorrect: Record<Pronoun, boolean>;
-      meaningCorrect: boolean;
-    };
-
-function newRound(verbs: VerbEntry[]) {
+      meaningCorre</old_code><new_code>function newRound(verbs: VerbEntry[]) {
   const verb = verbs[Math.floor(Math.random() * verbs.length)];
   const conjugations = shuffle(PRONOUNS.map((p) => ({ id: p, value: verb.present[p] })));
 
@@ -34,6 +31,8 @@ function newRound(verbs: VerbEntry[]) {
     meaningOptions: shuffle(options)
   };
 }
+
+type Round = ReturnType<typeof newRound>;
 
 export default function EasyPage() {
   const verbsState = useVerbs();
@@ -79,8 +78,8 @@ export default function EasyPage() {
     return new Map(round.conjugations.map((t) => [t.id, t.value]));
   }, [round]);
 
-  const availableConjugations = useMemo(() => {
-    if (!round) return [] as typeof round.conjugations;
+  const availableConjugations = useMemo<Round['conjugations']>(() => {
+    if (!round) return [];
     const used = new Set(Object.values(assignments).filter(Boolean) as string[]);
     return round.conjugations.filter((t) => !used.has(t.id));
   }, [round, assignments]);
