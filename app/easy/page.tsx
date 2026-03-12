@@ -68,7 +68,6 @@ export default function EasyPage() {
     setSelectedPronoun(null);
     setAssignments({});
     setSelectedMeaning(null);
-    setCheckState({ status);
     setCheckState({ status: 'editing' });
   }, []);
 
