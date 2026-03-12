@@ -88,6 +88,15 @@ a:hover {
   font-family: var(--font-heading);
 }
 
+.brandTitle {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-fg);
+}
+
 .subtitle {
   margin: 10px 0 0;
   color: var(--color-fg-muted);

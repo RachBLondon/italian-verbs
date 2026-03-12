@@ -91,11 +91,12 @@ export default function EasyPage() {
     e.dataTransfer.setData('application/json', JSON.stringify(payload));
     e.dataTransfer.effectAllowed = 'move';
 
-    // Hide the default drag preview/ghost image (removes the small triangle artifact in some browsers).
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
-    const img = new Image();
-    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    e.dataTransfer.setDragImage(img, 0, 0);
+    // Hide the default drag preview/ghost image.
+    // Using a canvas avoids "loading" cursor/preview glitches some browsers show with Image().
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    e.dataTransfer.setDragImage(canvas, 0, 0);
   }, []);
 
   const readDragPayload = useCallback((e: DragEvent) => {

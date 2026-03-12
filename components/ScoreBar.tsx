@@ -26,6 +26,9 @@ export default function ScoreBar({
       }}
     >
       <div className="row" style={{ alignItems: 'center' }}>
+        <Link className="brandTitle" href="/">
+          Verbissimo!
+        </Link>
         <span className="pill">Mode: {modeLabel}</span>
         <span className="pill">
           Score: {correct} / {total}
