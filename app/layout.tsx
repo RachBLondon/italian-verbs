@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Italian Irregular Verbs',
+  title: 'Verbissimo!',
   description: 'Practice Italian irregular verb conjugations (present tense)'
 };
 

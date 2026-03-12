@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <main className="card cardFrame">
       <div className="header">
-        <h1 className="title">Italian Irregular Verbs</h1>
+        <h1 className="title">Verbissimo!</h1>
         <p className="subtitle">
           Practice 20 common Italian irregular verbs in the present tense (io, tu, lui/lei, noi, voi, loro).
           Choose a mode to start. Your score is session-only and resets on refresh.
