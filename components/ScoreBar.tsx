@@ -15,7 +15,7 @@ export default function ScoreBar({
 }) {
   return (
     <div
-      className="card"
+      className="card cardFrame"
       style={{
         padding: 14,
         display: 'flex',

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <main className="card">
+    <main className="card cardFrame">
       <div className="header">
         <h1 className="title">Italian Irregular Verbs</h1>
         <p className="subtitle">

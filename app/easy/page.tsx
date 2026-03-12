@@ -197,7 +197,7 @@ export default function EasyPage() {
     <main>
       <ScoreBar modeLabel="Easy" correct={correct} total={total} onReset={onResetScore} />
 
-      <div className="card" style={{ padding: 18 }}>
+      <div className="card cardFrame" style={{ padding: 18 }}>
         <div className="row" style={{ alignItems: 'baseline', justifyContent: 'space-between' }}>
           <div>
             <div className="small">Verb</div>
@@ -209,7 +209,7 @@ export default function EasyPage() {
         <div style={{ height: 14 }} />
 
         <div className="grid2">
-          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-surface2)' }}>
+          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-panel)' }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>1) Drag each conjugation onto the correct pronoun</div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -343,7 +343,7 @@ export default function EasyPage() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-surface2)' }}>
+          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-panel)' }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>2) Choose the English meaning</div>
             <div style={{ display: 'grid', gap: 8 }}>
               {round.meaningOptions.map((m) => {

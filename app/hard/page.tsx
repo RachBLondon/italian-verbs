@@ -99,7 +99,7 @@ export default function HardPage() {
     <main>
       <ScoreBar modeLabel="Hard" correct={correct} total={total} onReset={onResetScore} />
 
-      <div className="card" style={{ padding: 18 }}>
+      <div className="card cardFrame" style={{ padding: 18 }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
           <div>
             <div className="small">English meaning</div>
@@ -110,7 +110,7 @@ export default function HardPage() {
 
         <div style={{ height: 14 }} />
 
-        <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-surface2)' }}>
+        <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-panel)' }}>
           <div className="small" style={{ marginBottom: 8 }}>
             Type the present tense form.
           </div>
