@@ -97,6 +97,17 @@ a:hover {
   color: var(--color-fg);
 }
 
+.brandBlock {
+  display: block;
+  width: 100%;
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--color-fg);
+}
+
 .subtitle {
   margin: 10px 0 0;
   color: var(--color-fg-muted);

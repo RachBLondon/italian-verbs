@@ -19,28 +19,30 @@ export default function ScoreBar({
       style={{
         padding: 14,
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
         gap: 12,
         marginBottom: 14
       }}
     >
-      <div className="row" style={{ alignItems: 'center' }}>
-        <Link className="brandTitle" href="/">
-          Verbissimo!
-        </Link>
-        <span className="pill">Mode: {modeLabel}</span>
-        <span className="pill">
-          Score: {correct} / {total}
-        </span>
-      </div>
-      <div className="row">
-        <button className="btn btnDanger" type="button" onClick={onReset}>
-          Reset
-        </button>
-        <Link className="btn" href="/">
-          Home
-        </Link>
+      <Link className="brandBlock" href="/">
+        Verbissimo!
+      </Link>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div className="row" style={{ alignItems: 'center' }}>
+          <span className="pill">Mode: {modeLabel}</span>
+          <span className="pill">
+            Score: {correct} / {total}
+          </span>
+        </div>
+        <div className="row">
+          <button className="btn btnDanger" type="button" onClick={onReset}>
+            Reset
+          </button>
+          <Link className="btn" href="/">
+            Home
+          </Link>
+        </div>
       </div>
     </div>
   );
