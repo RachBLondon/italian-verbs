@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type DragEvent } from 'react';
 import ScoreBar from '@/components/ScoreBar';
 import { useVerbs } from '@/lib/useVerbs';
 import { PRONOUNS, type Pronoun, type VerbEntry } from '@/lib/types';
@@ -41,7 +41,6 @@ export default function EasyPage() {
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const [selectedPronoun, setSelectedPronoun] = useState<Pronoun | null>(null);
   const [assignments, setAssignments] = useState<Partial<Record<Pronoun, string>>>({});
   const [selectedMeaning, setSelectedMeaning] = useState<string | null>(null);
 
@@ -65,7 +64,6 @@ export default function EasyPage() {
   }, []);
 
   const resetRoundUi = useCallback(() => {
-    setSelectedPronoun(null);
     setAssignments({});
     setSelectedMeaning(null);
     setCheckState({ status: 'editing' });
@@ -76,27 +74,65 @@ export default function EasyPage() {
     setRoundSeed((x) => x + 1);
   }, [resetRoundUi]);
 
-  const handleAssign = useCallback(
-    (conjugation: string) => {
-      if (!round) return;
-      if (!selectedPronoun) return;
+  const availableConjugations = useMemo(() => {
+    if (!round) return [] as string[];
+    const used = new Set(Object.values(assignments).filter(Boolean) as string[]);
+    return round.conjugations.filter((c) => !used.has(c));
+  }, [round, assignments]);
+
+  const setDragPayload = useCallback((e: DragEvent, payload: { conjugation: string; fromPronoun?: Pronoun }) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(payload));
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const readDragPayload = useCallback((e: DragEvent) => {
+    const raw = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as { conjugation: string; fromPronoun?: Pronoun };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handleDropOnPronoun = useCallback(
+    (pronoun: Pronoun, e: DragEvent) => {
       if (checkState.status !== 'editing') return;
+      const payload = readDragPayload(e);
+      if (!payload) return;
+
+      const { conjugation, fromPronoun } = payload;
 
       setAssignments((prev) => {
-        const next = { ...prev };
+        const next: Partial<Record<Pronoun, string>> = { ...prev };
+
+        if (fromPronoun) delete next[fromPronoun];
 
         // If this conjugation was assigned elsewhere, clear it.
         for (const p of PRONOUNS) {
           if (next[p] === conjugation) delete next[p];
         }
 
-        next[selectedPronoun] = conjugation;
+        next[pronoun] = conjugation;
         return next;
       });
-
-      setSelectedPronoun(null);
     },
-    [round, selectedPronoun, checkState.status]
+    [checkState.status, readDragPayload]
+  );
+
+  const handleDropOnPool = useCallback(
+    (e: DragEvent) => {
+      if (checkState.status !== 'editing') return;
+      const payload = readDragPayload(e);
+      if (!payload?.fromPronoun) return;
+
+      setAssignments((prev) => {
+        const next = { ...prev };
+        if (next[payload.fromPronoun] === payload.conjugation) delete next[payload.fromPronoun];
+        return next;
+      });
+    },
+    [checkState.status, readDragPayload]
   );
 
   const handleCheck = useCallback(() => {
@@ -163,108 +199,139 @@ export default function EasyPage() {
 
         <div className="grid2">
           <div className="card" style={{ padding: 14, borderRadius: 14, background: 'rgba(23, 32, 70, 0.55)' }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>1) Pick a pronoun, then assign a conjugation</div>
-            <div className="row">
-              {PRONOUNS.map((p) => {
-                const isSelected = selectedPronoun === p;
-                const checked = checkState.status === 'checked';
-                const correctness = checked ? checkState.perPronounCorrect[p] : null;
+            <div style={{ fontWeight: 800, marginBottom: 8 }}>1) Drag each conjugation onto the correct pronoun</div>
 
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    className="btn"
-                    onClick={() => {
-                      if (checkState.status !== 'editing') return;
-                      setSelectedPronoun((cur) => (cur === p ? null : p));
-                    }}
-                    style={{
-                      borderColor: isSelected ? 'rgba(124, 156, 255, 0.75)' : undefined,
-                      background: isSelected ? 'rgba(124, 156, 255, 0.12)' : undefined
-                    }}
-                  >
-                    <span style={{ fontWeight: 800 }}>{p}</span>
-                    {checked && (
-                      <span className={correctness ? 'badgeOk' : 'badgeBad'} style={{ marginLeft: 8 }}>
-                        {correctness ? '✓' : '✕'}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {PRONOUNS.map((p) => {
+                  const value = assignments[p];
+                  const checked = checkState.status === 'checked';
+                  const correctness = checked ? checkState.perPronounCorrect[p] : null;
+                  const disabled = checkState.status !== 'editing';
 
-            <div style={{ height: 10 }} />
+                  return (
+                    <div
+                      key={p}
+                      className="card"
+                      onDragOver={(e) => {
+                        if (disabled) return;
+                        e.preventDefault();
+                      }}
+                      onDrop={(e) => {
+                        if (disabled) return;
+                        e.preventDefault();
+                        handleDropOnPronoun(p, e);
+                      }}
+                      style={{
+                        padding: 10,
+                        borderRadius: 12,
+                        background: 'rgba(18, 26, 51, 0.65)',
+                        borderColor:
+                          checked && correctness != null
+                            ? correctness
+                              ? 'rgba(45, 212, 191, 0.55)'
+                              : 'rgba(251, 113, 133, 0.55)'
+                            : 'var(--border)'
+                      }}
+                    >
+                      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <div style={{ fontWeight: 800 }}>{p}</div>
+                        {checked && (
+                          <span className={correctness ? 'badgeOk' : 'badgeBad'} style={{ fontWeight: 800 }}>
+                            {correctness ? '✓' : '✕'}
+                          </span>
+                        )}
+                      </div>
 
-            <div className="small" style={{ marginBottom: 8 }}>
-              Assignments
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {PRONOUNS.map((p) => {
-                const value = assignments[p];
-                const checked = checkState.status === 'checked';
-                const correctness = checked ? checkState.perPronounCorrect[p] : null;
+                      <div style={{ height: 6 }} />
 
-                return (
-                  <div
-                    key={p}
-                    className="card"
-                    style={{
-                      padding: 10,
-                      borderRadius: 12,
-                      background: 'rgba(18, 26, 51, 0.65)',
-                      borderColor:
-                        checked && correctness != null
-                          ? correctness
-                            ? 'rgba(45, 212, 191, 0.55)'
-                            : 'rgba(251, 113, 133, 0.55)'
-                          : 'var(--border)'
-                    }}
-                  >
-                    <div className="small" style={{ marginBottom: 2 }}>
-                      {p}
+                      {value ? (
+                        <button
+                          type="button"
+                          className="btn"
+                          draggable={!disabled}
+                          onDragStart={(e) => setDragPayload(e, { conjugation: value, fromPronoun: p })}
+                          style={{ width: '100%', justifyContent: 'center' }}
+                          title={disabled ? undefined : 'Drag to another pronoun (or back to the pool)'}
+                        >
+                          {value}
+                        </button>
+                      ) : (
+                        <div
+                          className="small"
+                          style={{
+                            padding: '10px 12px',
+                            border: '1px dashed rgba(231, 236, 255, 0.22)',
+                            borderRadius: 12,
+                            color: 'var(--muted)'
+                          }}
+                        >
+                          Drop here
+                        </div>
+                      )}
+
+                      {checked && !correctness && (
+                        <div className="small" style={{ marginTop: 6 }}>
+                          Correct:{' '}
+                          <span style={{ color: 'var(--text)', fontWeight: 700 }}>{round.verb.present[p]}</span>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontWeight: 800 }}>{value ?? '—'}</div>
-                    {checked && !correctness && (
-                      <div className="small" style={{ marginTop: 4 }}>
-                        Correct: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{round.verb.present[p]}</span>
+                  );
+                })}
+              </div>
+
+              <div>
+                <div className="small" style={{ marginBottom: 8 }}>
+                  Conjugations (drag from here)
+                </div>
+
+                <div
+                  className="card"
+                  onDragOver={(e) => {
+                    if (checkState.status !== 'editing') return;
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    if (checkState.status !== 'editing') return;
+                    e.preventDefault();
+                    handleDropOnPool(e);
+                  }}
+                  style={{
+                    padding: 10,
+                    borderRadius: 12,
+                    background: 'rgba(18, 26, 51, 0.35)'
+                  }}
+                >
+                  <div className="row">
+                    {availableConjugations.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        className="btn"
+                        draggable={checkState.status === 'editing'}
+                        onDragStart={(e) => setDragPayload(e, { conjugation: c })}
+                        style={{ cursor: checkState.status === 'editing' ? 'grab' : undefined }}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                    {availableConjugations.length === 0 && (
+                      <div className="small" style={{ padding: '6px 2px' }}>
+                        All assigned
                       </div>
                     )}
                   </div>
-                );
-              })}
+                </div>
+
+                <div className="small" style={{ marginTop: 8 }}>
+                  Tip: Drag an assigned conjugation back here to unassign it.
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="card" style={{ padding: 14, borderRadius: 14, background: 'rgba(23, 32, 70, 0.55)' }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>Conjugations</div>
-            <div className="row">
-              {round.conjugations.map((c) => {
-                const disabled = checkState.status !== 'editing';
-                const isUsed = PRONOUNS.some((p) => assignments[p] === c);
-
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    className="btn"
-                    disabled={disabled}
-                    onClick={() => handleAssign(c)}
-                    style={{
-                      opacity: disabled ? 0.85 : 1,
-                      borderColor: isUsed ? 'rgba(124, 156, 255, 0.55)' : undefined
-                    }}
-                    title={isUsed ? 'Currently assigned' : 'Click to assign'}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{ height: 12 }} />
-
             <div style={{ fontWeight: 800, marginBottom: 8 }}>2) Choose the English meaning</div>
             <div style={{ display: 'grid', gap: 8 }}>
               {round.meaningOptions.map((m) => {
@@ -323,7 +390,7 @@ export default function EasyPage() {
             )}
 
             <div className="small" style={{ marginTop: 10 }}>
-              Tip: You can reassign by choosing a pronoun again and clicking a different conjugation.
+              Tip: You can reassign by dragging a conjugation onto a different pronoun.
             </div>
           </div>
         </div>
