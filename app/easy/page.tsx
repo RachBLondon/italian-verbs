@@ -259,8 +259,9 @@ export default function EasyPage() {
                   const correctness = checked ? checkState.perPronounCorrect[p] : null;
                   const disabled = checkState.status !== 'editing';
 
-                  const isSelected =
-                    isTapMode && tileId && tapSelection?.tileId === tileId && tapSelection?.fromPronoun === p;
+                  const isSelected = Boolean(
+                    isTapMode && tileId && tapSelection?.tileId === tileId && tapSelection?.fromPronoun === p
+                  );
                   const showTapTarget = isTapMode && !disabled && Boolean(tapSelection) && checkState.status === 'editing';
 
                   return (
