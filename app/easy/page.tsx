@@ -88,6 +88,12 @@ export default function EasyPage() {
   const setDragPayload = useCallback((e: DragEvent, payload: { tileId: string; fromPronoun?: Pronoun }) => {
     e.dataTransfer.setData('application/json', JSON.stringify(payload));
     e.dataTransfer.effectAllowed = 'move';
+
+    // Hide the default drag preview/ghost image (removes the small triangle artifact in some browsers).
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+    const img = new Image();
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    e.dataTransfer.setDragImage(img, 0, 0);
   }, []);
 
   const readDragPayload = useCallback((e: DragEvent) => {
