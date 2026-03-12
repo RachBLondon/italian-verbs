@@ -148,11 +148,14 @@ export default function EasyPage() {
     (e: DragEvent) => {
       if (checkState.status !== 'editing') return;
       const payload = readDragPayload(e);
-      if (!payload?.fromPronoun) return;
+      if (!payload) return;
+
+      const { fromPronoun } = payload;
+      if (!fromPronoun) return;
 
       setAssignments((prev) => {
         const next = { ...prev };
-        if (next[payload.fromPronoun] === payload.tileId) delete next[payload.fromPronoun];
+        if (next[fromPronoun] === payload.tileId) delete next[fromPronoun];
         return next;
       });
     },
