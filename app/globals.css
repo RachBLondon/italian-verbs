@@ -74,6 +74,7 @@ a:hover {
 
 .cardFrame {
   background: transparent;
+  border: none;
 }
 
 .header {
