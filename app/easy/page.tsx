@@ -203,7 +203,7 @@ export default function EasyPage() {
         <div style={{ height: 14 }} />
 
         <div className="grid2">
-          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'rgba(23, 32, 70, 0.55)' }}>
+          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-surface2)' }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>1) Drag each conjugation onto the correct pronoun</div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -231,13 +231,13 @@ export default function EasyPage() {
                       style={{
                         padding: 10,
                         borderRadius: 12,
-                        background: 'rgba(18, 26, 51, 0.65)',
+                        background: 'var(--color-surface)',
                         borderColor:
                           checked && correctness != null
                             ? correctness
-                              ? 'rgba(45, 212, 191, 0.55)'
-                              : 'rgba(251, 113, 133, 0.55)'
-                            : 'var(--border)'
+                              ? 'var(--color-success)'
+                              : 'var(--color-danger)'
+                            : 'var(--color-border)'
                       }}
                     >
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -267,9 +267,9 @@ export default function EasyPage() {
                           className="small"
                           style={{
                             padding: '10px 12px',
-                            border: '1px dashed rgba(231, 236, 255, 0.22)',
+                            border: '1px dashed var(--color-border-strong)',
                             borderRadius: 12,
-                            color: 'var(--muted)'
+                            color: 'var(--color-fg-muted)'
                           }}
                         >
                           Drop here
@@ -279,7 +279,7 @@ export default function EasyPage() {
                       {checked && !correctness && (
                         <div className="small" style={{ marginTop: 6 }}>
                           Correct:{' '}
-                          <span style={{ color: 'var(--text)', fontWeight: 700 }}>{round.verb.present[p]}</span>
+                          <span style={{ color: 'var(--color-fg)', fontWeight: 700 }}>{round.verb.present[p]}</span>
                         </div>
                       )}
                     </div>
@@ -306,7 +306,7 @@ export default function EasyPage() {
                   style={{
                     padding: 10,
                     borderRadius: 12,
-                    background: 'rgba(18, 26, 51, 0.35)'
+                    background: 'var(--color-surface)'
                   }}
                 >
                   <div className="row">
@@ -337,7 +337,7 @@ export default function EasyPage() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'rgba(23, 32, 70, 0.55)' }}>
+          <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-surface2)' }}>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>2) Choose the English meaning</div>
             <div style={{ display: 'grid', gap: 8 }}>
               {round.meaningOptions.map((m) => {
@@ -347,10 +347,10 @@ export default function EasyPage() {
 
                 let borderColor: string | undefined;
                 if (checked) {
-                  if (isCorrect) borderColor = 'rgba(45, 212, 191, 0.55)';
-                  else if (isSelected && !isCorrect) borderColor = 'rgba(251, 113, 133, 0.55)';
+                  if (isCorrect) borderColor = 'var(--color-success)';
+                  else if (isSelected && !isCorrect) borderColor = 'var(--color-danger)';
                 } else if (isSelected) {
-                  borderColor = 'rgba(124, 156, 255, 0.75)';
+                  borderColor = 'var(--color-accent)';
                 }
 
                 return (

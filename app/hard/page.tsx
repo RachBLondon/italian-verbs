@@ -110,7 +110,7 @@ export default function HardPage() {
 
         <div style={{ height: 14 }} />
 
-        <div className="card" style={{ padding: 14, borderRadius: 14, background: 'rgba(23, 32, 70, 0.55)' }}>
+        <div className="card" style={{ padding: 14, borderRadius: 14, background: 'var(--color-surface2)' }}>
           <div className="small" style={{ marginBottom: 8 }}>
             Type the present tense form.
           </div>
@@ -133,10 +133,9 @@ export default function HardPage() {
                   minWidth: 220,
                   padding: '10px 12px',
                   borderRadius: 12,
-                  border: '1px solid var(--border)',
-                  background: 'rgba(18, 26, 51, 0.55)',
-                  color: 'var(--text)',
-                  outline: 'none',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-fg)',
                   fontWeight: 700
                 }}
                 placeholder="e.g. vado"
@@ -161,7 +160,7 @@ export default function HardPage() {
               {!result.isCorrect && (
                 <div className="small" style={{ marginTop: 6 }}>
                   Correct answer:{' '}
-                  <span style={{ color: 'var(--text)', fontWeight: 800 }}>{result.correctAnswer}</span>
+                  <span style={{ color: 'var(--color-fg)', fontWeight: 800 }}>{result.correctAnswer}</span>
                 </div>
               )}
               <div style={{ height: 10 }} />
