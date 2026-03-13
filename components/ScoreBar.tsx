@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BrandHeader from '@/components/BrandHeader';
 
 export default function ScoreBar({
   modeLabel,
@@ -24,9 +25,7 @@ export default function ScoreBar({
         marginBottom: 14
       }}
     >
-      <Link className="brandBlock" href="/">
-        Verbissimo!
-      </Link>
+      <BrandHeader />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div className="row" style={{ alignItems: 'center' }}>
